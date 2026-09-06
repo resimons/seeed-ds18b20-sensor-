@@ -1,0 +1,54 @@
+# DS18B20 sensors read by a Xiao ESP32 C6 and sending json messages to a mqtt topic
+
+## What this is
+
+A PlatformIO project for a Seeed Xiao ESP32-C6, built on **ESP-IDF directly** (`framework = espidf` in `platformio.ini`) — not Arduino. There is no `Serial`, no `setup()`/`loop()` Arduino entry points, and no Arduino libraries available unless explicitly added. Entry point is `extern "C" void app_main(void)` in `src/main.cpp`.
+
+Three DB18B20 sensors are connected to GPIO21. The temperature measurements are read periodically and are sent to a mqtt topic.
+
+## Get started with the ESP32
+
+[Get started](https://wiki.seeedstudio.com/xiao_esp32c6_getting_started/)
+
+## Where to buy
+
+[ESP32 C6](https://www.kiwi-electronics.com/nl/seeed-studio-xiao-esp32c6-20076)
+[DS18B20](https://www.tinytronics.nl/nl/sensoren/temperatuur/ds18b20-to-92-thermometer-temperatuur-sensor-met-kabel-waterproof-hoge-temperatuur-1m)
+[DS18B20 Adapter](https://www.tinytronics.nl/nl/sensoren/temperatuur/ds18b20-adapter)
+
+### Front ESP32
+![image](https://files.seeedstudio.com/wiki/SeeedStudio-XIAO-ESP32C6/img/XIAO_ESP32-C6_front_pinout.png)
+
+### Back ESP32
+![image](https://files.seeedstudio.com/wiki/SeeedStudio-XIAO-ESP32C6/img/XIAO_ESP32-C6_back_pinout.png)
+
+## How to connect DS18B20 to ESP32
+DS18B20 ADAPTER | COLOUR | ESP
+------------ |--------| -------------
+VCC | RED    | 3.3V
+GND | BLACK  | GND
+DATA | YELLOW | GPIO21
+
+[How to](https://randomnerdtutorials.com/esp32-ds18b20-temperature-arduino-ide/)
+[Dallas Temperature Control LIbrary](https://www.milesburton.com/?title=Dallas_Temperature_Control_Library)
+
+## How it works
+
+### WiFi
+
+The esp is making a connection to local WiFi network as defined in the file include/wifi_config.h
+
+### MQTT Connection
+
+After being connected using WiFi it connects to a mqtt broker using TLS and verifying certificates. All to be defined in the file include/mqtt_broker_config.h.
+It produces a heartbeat-message first on the configured topic MQTT_TOPIC_HEARTBEAT, then repeats it every HEARTBEAT_INTERVAL_MINUTES (defined in src/main.cpp, defaults to 60):
+
+`{"device":"MCUDEVICE-<id>","device_type":"esp32 c6","type":"heartbeat","uptime":<uptime in minutes>,"rssi":<wifi rssi in dBm>}`
+
+### Sensors
+
+The three DS18B20 sensors on GPIO21 are read every SENSOR_READ_INTERVAL_MS (defined in src/main.cpp, defaults to 30 seconds). Each reading is published as its own message on the configured topic MQTT_TOPIC_SENSOR:
+
+`{"device":"MCUDEVICE-<id>","sensor":"ds18b20","index":<0-2>,"temperature":<°C>}`
+
+`index` reflects the order the sensors were discovered on the 1-Wire bus at boot, not a fixed mapping to a specific physical sensor.
